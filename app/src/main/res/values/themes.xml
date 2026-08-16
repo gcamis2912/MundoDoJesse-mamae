@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.MundoDoJesse" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#8B5FBF</item>
+        <item name="android:windowBackground">#8B5FBF</item>
+    </style>
+</resources>
