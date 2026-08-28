@@ -6,11 +6,6 @@ plugins {
 android {
     namespace = "com.familia.mundodojesse"
     compileSdk = 34
-sourceSets {
-        getByName("main") {
-            res.exclude("**/ic_launcher-2.png")
-        }
-    }
 
     defaultConfig {
         applicationId = "com.familia.mundodojesse"
