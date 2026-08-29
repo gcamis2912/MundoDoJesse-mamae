@@ -256,4 +256,26 @@ fun FutebolScreen(nome: String, tts: TtsManager, repo: ProgressoRepository, aoVo
         Text(
             "⚽ Gols: $gols",
             fontSize = 20.sp,
-            col
+            color = Color.White,
+            modifier = Modifier.align(Alignment.TopEnd).padding(20.dp)
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 60.dp)
+                .offset(y = posicaoBolaY.value.dp)
+        ) {
+            IconeCartoon(TipoIcone.BOLA, tamanho = 90.dp, corPrincipal = Color.White)
+        }
+
+        Text(
+            "Toca na tela pra chutar! 👆",
+            fontSize = 16.sp,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
+        )
+
+        ConfettiOverlay(visivel = mostrarConfete)
+    }
+}
