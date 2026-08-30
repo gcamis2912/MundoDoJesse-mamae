@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -299,7 +300,7 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
 
 private fun Modifier.onSizeChangedCompat(aoMudar: (androidx.compose.ui.geometry.Size) -> Unit): Modifier =
     this.then(
-        androidx.compose.ui.layout.onGloballyPositioned { coords ->
+        Modifier.onGloballyPositioned { coords ->
             aoMudar(androidx.compose.ui.geometry.Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
         }
     )
