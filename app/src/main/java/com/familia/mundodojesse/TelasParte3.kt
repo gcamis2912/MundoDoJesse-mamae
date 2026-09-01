@@ -250,8 +250,7 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
                         )
                     }
             ) {
-                Canvas(modifier = Modifier.fillMaxSize().onSizeChangedCompat { tamanhoCanvas = it }) {
-                    drawContext.canvas.nativeCanvas.apply {
+                
                         Canvas(modifier = Modifier.fillMaxSize().onSizeChangedCompat { tamanhoCanvas = it }) {
                     pontosDesenhados.size // faz a tela atualizar o desenho a cada toque
                     drawContext.canvas.nativeCanvas.apply {
