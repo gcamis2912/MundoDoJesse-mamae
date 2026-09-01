@@ -51,7 +51,8 @@ val FRASES_GENTIS = listOf(
     FraseGentil("Não, obrigado", "🙅", "Fala \"não, obrigado\" quando não quer uma coisa. Sempre com educação."),
     FraseGentil("De nada", "😊", "Fala \"de nada\" quando alguém te agradece."),
     FraseGentil("Com licença", "🚪", "Fala \"com licença\" quando quer passar."),
-    FraseGentil("Desculpa", "😊", "Fala \"desculpa\" quando machuca alguém sem querer. Ou quando solta um arrotinho ou um puzinho."),
+    FraseGentil("Desculpa", "😊", "Fala \"desculpa\" quando machuca alguém sem querer."),
+    FraseGentil("Desculpa (arrotinho ou pum)", "😊", "Se você arrotar ou soltar um puzinho, fala \"desculpa\" pras pessoas."),
     FraseGentil("Tudo bem, acontece", "😌", "Fala isso quando alguém te pede desculpa. Pra deixar a pessoa tranquila."),
     FraseGentil("Não tem problema", "🤗", "Fala isso pra dizer que está tudo bem, sem ficar bravo.")
 )
