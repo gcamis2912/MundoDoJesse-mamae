@@ -1,5 +1,10 @@
 package com.familia.mundodojesse
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -31,63 +37,98 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-// ================= BLOCOS DE COR =================
-private val CORES_BLOCOS = listOf(Coral, Sun, Leaf, Sky, Grape, Pink)
+// ================= BLOCOS DE COR (jogo de acertar a cor certa) =================
+data class OpcaoCor(val nome: String, val cor: Color)
+private val PALETA_BLOCOS = listOf(
+    OpcaoCor("vermelho", Coral),
+    OpcaoCor("amarelo", Sun),
+    OpcaoCor("verde", Leaf),
+    OpcaoCor("azul", Sky),
+    OpcaoCor("roxo", Grape),
+    OpcaoCor("rosa", Pink)
+)
 
 @Composable
 fun BlocosScreen(nome: String, tts: TtsManager, repo: ProgressoRepository, aoVoltar: () -> Unit) {
-    var pilha by remember { mutableStateOf(listOf<Color>()) }
+    var nivel by remember { mutableStateOf(1) }
+    val qtdCoresNivel = (1 + nivel).coerceAtMost(PALETA_BLOCOS.size)
+    val metaNivel = (2 + nivel).coerceAtMost(8)
+    var opcoesNivel by remember(nivel) { mutableStateOf(PALETA_BLOCOS.shuffled().take(qtdCoresNivel)) }
+    var alvo by remember(nivel, opcoesNivel) { mutableStateOf(opcoesNivel.random()) }
+    var pilha by remember(nivel) { mutableStateOf(listOf<Color>()) }
     var mostrarConfete by remember { mutableStateOf(false) }
-    val meta = 5
+    var dica by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        tts.falar("Vamos empilhar blocos coloridos, $nome? Toca aqui embaixo pra colocar mais um!")
+    fun novaRodada() {
+        alvo = opcoesNivel.random()
+        dica = false
+    }
+
+    LaunchedEffect(nivel) {
+        tts.falar("Vamos empilhar um bloco ${alvo.nome}, $nome! Toca na cor certa.")
     }
 
     FundoComEstrelas(gradiente = GradienteSky) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             Text("⬅️", color = Color.White, fontSize = 20.sp, modifier = Modifier.clickable { aoVoltar() })
             Spacer(Modifier.height(6.dp))
-            Text("Blocos de Cor — ${pilha.size}/$meta", fontSize = 22.sp, color = Color.White)
+            Text("Blocos de Cor — Nível $nivel", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("${pilha.size} de $metaNivel blocos", fontSize = 15.sp, color = Color.White)
+            Spacer(Modifier.height(10.dp))
 
-            Spacer(Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text("Toque no bloco ", fontSize = 18.sp, color = Color.White)
+                Box(Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).background(alvo.cor))
+                Text(" ${alvo.nome}!", fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(16.dp))
             Column(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 pilha.reversed().forEach { cor ->
-                    Box(Modifier.size(width = 90.dp, height = 40.dp).clip(RoundedCornerShape(10.dp)).background(cor))
+                    Box(Modifier.size(width = 90.dp, height = 34.dp).clip(RoundedCornerShape(10.dp)).background(cor))
                 }
             }
-            Spacer(Modifier.height(24.dp))
 
-            Box(
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White)
-                    .clickable {
-                        val novaCor = CORES_BLOCOS.random()
-                        pilha = pilha + novaCor
-                        tts.falar("${pilha.size}! ${ELOGIOS[Random.nextInt(ELOGIOS.size)]}")
-                        if (pilha.size >= meta) {
-                            repo.somarEstrela("contagem")
-                            mostrarConfete = true
-                            tts.falar("Uau, $nome, você empilhou todos os blocos! Que demais!")
-                            pilha = emptyList()
-                        }
-                    }
-                    .padding(horizontal = 30.dp, vertical = 16.dp)
-            ) {
-                Text("➕ Colocar bloco", fontSize = 18.sp, color = Ink)
+            Spacer(Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                opcoesNivel.forEach { opcao ->
+                    Box(
+                        Modifier
+                            .padding(6.dp)
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (dica && opcao == alvo) Color.White else opcao.cor)
+                            .clickable {
+                                if (opcao == alvo) {
+                                    pilha = pilha + opcao.cor
+                                    tts.falar("${ELOGIOS[Random.nextInt(ELOGIOS.size)]} Isso é ${opcao.nome}!")
+                                    if (pilha.size >= metaNivel) {
+                                        repo.somarEstrela("contagem")
+                                        mostrarConfete = true
+                                        tts.falar("Uau, $nome! Você terminou o nível $nivel! Vamos pro próximo?")
+                                    } else {
+                                        novaRodada()
+                                    }
+                                } else {
+                                    dica = true
+                                    tts.falar(FRASES_APOIO_ERRO[Random.nextInt(FRASES_APOIO_ERRO.size)])
+                                }
+                            }
+                    )
+                }
             }
             Spacer(Modifier.height(30.dp))
         }
         ConfettiOverlay(visivel = mostrarConfete)
         LaunchedEffect(mostrarConfete) {
             if (mostrarConfete) {
-                delay(1500)
+                delay(1600)
                 mostrarConfete = false
+                pilha = emptyList()
+                nivel++
             }
         }
     }
@@ -188,7 +229,7 @@ fun BoasManeirasScreen(nome: String, tts: TtsManager, repo: ProgressoRepository,
     }
 }
 
-// ================= ALFABETIZAÇÃO (traçar o nome) =================
+// ================= ALFABETIZAÇÃO (traçar o nome) — corrigida =================
 @Composable
 fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository, aoVoltar: () -> Unit) {
     val letras = remember(nome) { nome.uppercase().toList().filter { it.isLetter() } }
@@ -201,18 +242,24 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
     var mostrarDica by remember { mutableStateOf(false) }
     var tamanhoCanvas by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
+    val pulso = rememberInfiniteTransition(label = "pulsoSeta")
+    val escalaSeta by pulso.animateFloat(
+        initialValue = 1f, targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(tween(500), RepeatMode.Reverse), label = "escalaSeta"
+    )
+
     LaunchedEffect(indiceLetra) {
         mostrarDica = false
         tts.falar("Vamos traçar a letra $letraAtual, $nome? Passa o dedinho por cima dela.")
-        delay(7000)
-        if (pontosDesenhados.size < 12) {
+        delay(6000)
+        if (pontosDesenhados.size < 10) {
             mostrarDica = true
             tts.falar(FRASES_APOIO_ERRO[Random.nextInt(FRASES_APOIO_ERRO.size)])
         }
     }
 
     fun verificarCobertura() {
-        if (tamanhoCanvas == androidx.compose.ui.geometry.Size.Zero || pontosDesenhados.isEmpty()) return
+        if (tamanhoCanvas == androidx.compose.ui.geometry.Size.Zero || pontosDesenhados.isEmpty() || mostrarConfete) return
         val colunas = 8
         val linhas = 8
         val celulasTocadas = mutableSetOf<Pair<Int, Int>>()
@@ -222,9 +269,10 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
             celulasTocadas.add(cx to cy)
         }
         val fracao = celulasTocadas.size.toFloat() / (colunas * linhas)
-        if (fracao >= 0.22f) {
-            repo.somarEstrela("letras")
+        if (fracao >= 0.14f) {
             mostrarConfete = true
+            mostrarDica = false
+            repo.somarEstrela("letras")
             tts.falar("${ELOGIOS[Random.nextInt(ELOGIOS.size)]} Você escreveu o $letraAtual, $nome!")
         }
     }
@@ -245,14 +293,19 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
                     .pointerInput(indiceLetra) {
                         detectDragGestures(
                             onDragStart = { offset -> caminho.moveTo(offset.x, offset.y); pontosDesenhados.add(offset) },
-                            onDrag = { change, _ -> caminho.lineTo(change.position.x, change.position.y); pontosDesenhados.add(change.position) },
+                            onDrag = { change, _ ->
+                                caminho.lineTo(change.position.x, change.position.y)
+                                pontosDesenhados.add(change.position)
+                                verificarCobertura()
+                            },
                             onDragEnd = { verificarCobertura() }
                         )
                     }
             ) {
-                
-                        Canvas(modifier = Modifier.fillMaxSize().onSizeChangedCompat { tamanhoCanvas = it }) {
-                    pontosDesenhados.size // faz a tela atualizar o desenho a cada toque
+                Canvas(modifier = Modifier.fillMaxSize().onGloballyPositioned { coords ->
+                    tamanhoCanvas = androidx.compose.ui.geometry.Size(coords.size.width.toFloat(), coords.size.height.toFloat())
+                }) {
+                    pontosDesenhados.size // faz a tela redesenhar a cada toque novo
                     drawContext.canvas.nativeCanvas.apply {
                         val paint = android.graphics.Paint().apply {
                             color = android.graphics.Color.parseColor("#E6DEF5")
@@ -266,7 +319,13 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
                 }
                 if (mostrarDica) {
                     Text(
-                        "👉 Tenta assim, devagarinho!",
+                        "👉", fontSize = 54.sp,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .escalar(escalaSeta, escalaSeta)
+                    )
+                    Text(
+                        "Tenta assim, devagarinho!",
                         fontSize = 16.sp,
                         color = Grape,
                         modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp)
@@ -300,9 +359,5 @@ fun AlfabetizacaoScreen(nome: String, tts: TtsManager, repo: ProgressoRepository
     }
 }
 
-private fun Modifier.onSizeChangedCompat(aoMudar: (androidx.compose.ui.geometry.Size) -> Unit): Modifier =
-    this.then(
-        Modifier.onGloballyPositioned { coords ->
-            aoMudar(androidx.compose.ui.geometry.Size(coords.size.width.toFloat(), coords.size.height.toFloat()))
-        }
-    )
+private fun Modifier.escalar(sx: Float, sy: Float): Modifier =
+    this.then(Modifier.scale(sx, sy))
